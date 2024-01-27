@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Watermark Video</title>
+</head>
+<body>
+    <h2>Watermark Your Video</h2>
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <label for="video">Video:</label>
+        <input type="file" name="video" id="video" required>
+        <br><br>
+        <label for="watermark">Watermark Text:</label>
+        <input type="text" name="watermark" id="watermark" required>
+        <br><br>
+        <input type="submit" value="Upload and Process">
+    </form>
+</body>
+</html>

@@ -1,7 +1,6 @@
 import os
 import cv2
 import tempfile
-import numpy as np
 from flask import Flask, request, send_file, render_template
 
 app = Flask(__name__)
@@ -40,12 +39,31 @@ def add_watermark(input_video_path, watermark_text, output_video_path):
     font_color = (255, 255, 255)
     font_thickness = 2
 
+    # Initial position for floating watermark
+    x, y = 50, 50
+    move_x, move_y = 2, 2
+
     while True:
         ret, frame = cap.read()
         if not ret:
             break
 
-        cv2.putText(frame, watermark_text, (50, 50), font, font_scale, font_color, font_thickness, cv2.LINE_AA)
+        # Static watermark
+        cv2.putText(frame, watermark_text, (50, height - 50), font, font_scale, font_color, font_thickness, cv2.LINE_AA)
+        
+        # Floating watermark
+        cv2.putText(frame, watermark_text, (x, y), font, font_scale, font_color, font_thickness, cv2.LINE_AA)
+        
+        # Update position for floating watermark
+        x += move_x
+        y += move_y
+
+        # Change direction when hitting the edge
+        if x + 200 > width or x < 0:
+            move_x = -move_x
+        if y + 50 > height or y < 0:
+            move_y = -move_y
+
         out.write(frame)
 
     cap.release()
@@ -54,3 +72,4 @@ def add_watermark(input_video_path, watermark_text, output_video_path):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
+

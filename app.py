@@ -30,4 +30,4 @@ def add_watermark(video_file, watermark_text):
     return video
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False)

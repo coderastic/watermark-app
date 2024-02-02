@@ -1,6 +1,7 @@
 import os
 import cv2
 import tempfile
+import subprocess
 from flask import Flask, request, send_file, render_template
 
 app = Flask(__name__)
@@ -13,21 +14,25 @@ def index():
 def upload_video():
     video_file = request.files['video']
     watermark_text = request.form['watermark']
-    output_filename = 'output_video.mp4'
+    output_filename = 'watermarked_video.mp4'
+    final_output_filename = 'final_output_with_audio.mp4'
+    temp_audio_file = 'temp_audio.mp3'
 
     with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as temp_video:
         video_file.save(temp_video)
         temp_video_path = temp_video.name
 
     try:
-        add_watermark(temp_video_path, watermark_text, output_filename)
-        return send_file(output_filename, as_attachment=True)
+        add_watermark(temp_video_path, watermark_text, output_filename, temp_audio_file, final_output_filename)
+        return send_file(final_output_filename, as_attachment=True)
     finally:
-        os.remove(temp_video_path)
-        if os.path.exists(output_filename):
-            os.remove(output_filename)
+        cleanup_files([temp_video_path, output_filename, temp_audio_file, final_output_filename])
 
-def add_watermark(input_video_path, watermark_text, output_video_path):
+def add_watermark(input_video_path, watermark_text, output_video_path, temp_audio_path, final_output_filename):
+    # Extract audio from the original video
+    subprocess.run(['ffmpeg', '-i', input_video_path, '-q:a', '0', '-map', 'a', temp_audio_path], check=True)
+
+    # Process video to add watermark
     cap = cv2.VideoCapture(input_video_path)
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     fps = cap.get(cv2.CAP_PROP_FPS)
@@ -42,6 +47,7 @@ def add_watermark(input_video_path, watermark_text, output_video_path):
     # Initial position for floating watermark
     x, y = 50, 50
     move_x, move_y = 2, 2
+    # ... [Continuation from the previous part] ...
 
     while True:
         ret, frame = cap.read()
@@ -57,8 +63,6 @@ def add_watermark(input_video_path, watermark_text, output_video_path):
         # Update position for floating watermark
         x += move_x
         y += move_y
-
-        # Change direction when hitting the edge
         if x + 200 > width or x < 0:
             move_x = -move_x
         if y + 50 > height or y < 0:
@@ -69,7 +73,15 @@ def add_watermark(input_video_path, watermark_text, output_video_path):
     cap.release()
     out.release()
 
+    # Merge audio back into the watermarked video
+    subprocess.run(['ffmpeg', '-i', output_video_path, '-i', temp_audio_path, '-c', 'copy', '-map', '0:v', '-map', '1:a', '-shortest', final_output_filename], check=True)
+
+def cleanup_files(file_paths):
+    for file_path in file_paths:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+
 

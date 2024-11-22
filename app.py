@@ -81,7 +81,5 @@ def cleanup_files(file_paths):
         if os.path.exists(file_path):
             os.remove(file_path)
 
-if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
-
-
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=7860) 
